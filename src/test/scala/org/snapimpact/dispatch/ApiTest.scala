@@ -1,12 +1,12 @@
 package org.snapimpact.dispatch
 
 /**
- * Created by IntelliJ IDEA.
- * User: okristjansson
- * Date: Mar 16, 2010
- * Time: 8:38:30 PM
- * To change this template use File | Settings | File Templates.
- */
+* Created by IntelliJ IDEA.
+* User: okristjansson
+* Date: Mar 16, 2010
+* Time: 8:38:30 PM
+* To change this template use File | Settings | File Templates.
+*/
 
 import _root_.org.specs._
 import _root_.org.specs.runner._
@@ -64,16 +64,11 @@ class APISpec extends Specification with ApiSubmitTester with TestKit
 
     // Searches
     "search for something not there" in {
-<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
-                zx_NotThere_xz
-=======
                 searchFor_zx_NotThere_xz
     }
     "search for hunger" in {
-                searchForHunger
->>>>>>> 901d3a89134b61dc900002ce7ca3bc3b8e244251:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
+                org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForHunger}
     }
-
     "search for specific dates" in {
       org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForSpecificDates}
     }
@@ -84,8 +79,8 @@ class APISpec extends Specification with ApiSubmitTester with TestKit
       org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForDateThenZip}
     }
 
-  }  //  "api" should
-}   // ApiSpec
+  } // "api" should
+} // ApiSpec
 
 
 
@@ -106,27 +101,27 @@ class V1SysSpec extends Specification with TestKit with ApiSubmitTester
   }
 
   // This times out the server, let's skip it
-  //  "search for something not there" in {zx_NotThere_xz }
-  
+  // "search for something not there" in {zx_NotThere_xz }
+
 
   "The API from the old V1 system" should
   {
-	"search for hunger" in {searchForHunger}
-	
+"search for hunger" in {searchForHunger}
+
     "search for specific dates" in {searchForSpecificDates}
 
     "search for zip code" in {searchForZip}
 
     "search for date then zip code" in {searchForDateThenZip}
   }
-}  // V1SysSpec
+} // V1SysSpec
 
 
 
 
 
 // Does the actual interaction with the webserver and includes the common tests
-trait ApiSubmitTester // extends  // with TestKit
+trait ApiSubmitTester // extends // with TestKit
 {
   self: Specification with TestKit =>
 
@@ -143,7 +138,7 @@ trait ApiSubmitTester // extends  // with TestKit
 
           ret
         }
-        case ex => throw new FailureException("Something went wrong while interacting with the webserver," +  ex.toString() )
+        case ex => throw new FailureException("Something went wrong while interacting with the webserver," + ex.toString() )
       }
     }
 
@@ -159,7 +154,7 @@ trait ApiSubmitTester // extends  // with TestKit
         // All good prop
         val descr = "All for Good search results"
         ret.description mustEqual descr
-        
+
         // version prop
         val ver = 1.0
         ret.version mustEqual ver
@@ -167,21 +162,12 @@ trait ApiSubmitTester // extends  // with TestKit
         // See if the date is good and can be parsed
         // sample string -> Sat, 01 May 2010 16:51:10 +0000
         val dateFormatter = DateTimeFormat.forPattern("E, dd MMM yyyy HH:mm:ss Z");
-        val item =  dateFormatter.parseDateTime( ret.lastBuildDate )
+        val item = dateFormatter.parseDateTime( ret.lastBuildDate )
         // Make sure it's a DateTime
         item must haveClass[DateTime]
    }
 
    // Search for something not available in the database
-<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
-   def zx_NotThere_xz = {
-            val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" )
-            // no events will be returned on this criteria zx_NotThere_xz
-            val count = 0;
-            //System.out.println( "* Expected zx_NotThere_xz val=" + count + ", was=" + ret.items.length )
-            ( ret.items.length == count ) must_== true
-  }
-=======
    def searchFor_zx_NotThere_xz = {
           val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" )
 
@@ -198,8 +184,12 @@ trait ApiSubmitTester // extends  // with TestKit
 
       val count = 0;
       ( ret.items.length > count ) must_== true
->>>>>>> 901d3a89134b61dc900002ce7ca3bc3b8e244251:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
 
+      // Make sure they are not null
+      for( item <- ret.items ){
+        item must notBe( null )
+      }
+   }
 
   // Search by date - always assumes there are events bewteen now + 7 days and now + 14 days
   def searchForSpecificDates = {
@@ -253,7 +243,7 @@ trait ApiSubmitTester // extends  // with TestKit
       }
   }
 
-}  // trait ApiSubmitTester
+} // trait ApiSubmitTester
 
 
 
