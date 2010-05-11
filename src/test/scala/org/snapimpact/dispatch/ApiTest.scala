@@ -64,13 +64,25 @@ class APISpec extends Specification with ApiSubmitTester with TestKit
 
     // Searches
     "search for something not there" in {
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
                 zx_NotThere_xz
+=======
+                searchFor_zx_NotThere_xz
+    }
+    "search for hunger" in {
+                searchForHunger
+>>>>>>> 901d3a89134b61dc900002ce7ca3bc3b8e244251:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
     }
 
     "search for specific dates" in {
       org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForSpecificDates}
     }
-
+    "search for zip code" in {
+      org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForZip}
+    }
+    "search for date then zip code" in {
+      org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForDateThenZip}
+    }
 
   }  //  "api" should
 }   // ApiSpec
@@ -99,7 +111,13 @@ class V1SysSpec extends Specification with TestKit with ApiSubmitTester
 
   "The API from the old V1 system" should
   {
+	"search for hunger" in {searchForHunger}
+	
     "search for specific dates" in {searchForSpecificDates}
+
+    "search for zip code" in {searchForZip}
+
+    "search for date then zip code" in {searchForDateThenZip}
   }
 }  // V1SysSpec
 
@@ -155,6 +173,7 @@ trait ApiSubmitTester // extends  // with TestKit
    }
 
    // Search for something not available in the database
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
    def zx_NotThere_xz = {
             val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" )
             // no events will be returned on this criteria zx_NotThere_xz
@@ -162,9 +181,27 @@ trait ApiSubmitTester // extends  // with TestKit
             //System.out.println( "* Expected zx_NotThere_xz val=" + count + ", was=" + ret.items.length )
             ( ret.items.length == count ) must_== true
   }
+=======
+   def searchFor_zx_NotThere_xz = {
+          val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" )
+
+          // no events will be returned on this criteria zx_NotThere_xz
+          val count = 0;
+
+          ( ret.items.length == count ) must_== true
+
+  }
+
+    // *** Note *** This test assumes that there are always hunger events available in the database
+    def searchForHunger= {
+      val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "hunger" )
+
+      val count = 0;
+      ( ret.items.length > count ) must_== true
+>>>>>>> 901d3a89134b61dc900002ce7ca3bc3b8e244251:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
 
 
-  // Search by date - always assumes there are events bewteen now + 7 days and now + 8 days
+  // Search by date - always assumes there are events bewteen now + 7 days and now + 14 days
   def searchForSpecificDates = {
     val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
     val now = new DateTime
@@ -173,6 +210,39 @@ trait ApiSubmitTester // extends  // with TestKit
 
     val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
       "vol_startdate" -> fmt.print(plus7), "vol_enddate" -> fmt.print(plus14))
+
+    val count = 0;
+      ( ret.items.length > count ) must_== true
+
+    // Make sure they are not null
+      for( item <- ret.items ){
+        item must notBe( null )
+      }
+  }
+
+  // Search by zip code - always assumes there are events in 94117 (San Francisco)
+  def searchForZip = {
+    val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "vol_loc" -> "94117" )
+
+    val count = 0;
+      ( ret.items.length > count ) must_== true
+
+      // Make sure they are not null
+      for( item <- ret.items ){
+        item must notBe( null )
+      }
+  }
+
+  // Search by date then zip code - always assumes there are events bewteen now + 7 days and now + 14 days
+  // near the zip 94117 (San Francisco)
+  def searchForDateThenZip = {
+    val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
+    val now = new DateTime
+    val plus7 = now.plusDays(7)
+    val plus14 = now.plusDays(14)
+
+    val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
+      "vol_startdate" -> fmt.print(plus7), "vol_enddate" -> fmt.print(plus14), "vol_loc" -> "94117")
 
     val count = 0;
       ( ret.items.length > count ) must_== true
