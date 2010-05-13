@@ -8,6 +8,7 @@ import _root_.net.liftweb.json._
 import JsonParser._
 import JsonAST._
 import net.liftweb.http.testing._
+import net.liftweb.json.JsonDSL._
 
 import org.snapimpact.model.GeoLocation
 
@@ -23,28 +24,70 @@ import org.snapimpact.model.GeoLocation
  * @param in String Takes the String and returns an Option[GeoLocation]
  */
 object Geocoder {
-  private val cache = new LRUMap[String, Box[GeoLocation]](2500)
+  private var cache: Map[String, Box[GeoLocation]] = Map()
+
+  import scala.io.Source
+  import java.io._
+
+  private implicit def formats = DefaultFormats
+  
+  for {
+    source <- tryo(Source.fromFile(new File("geocache.txt")))
+    line <- source.getLines()
+    (key :: jval :: _) =  line.roboSplit("=").map(_.trim)
+    decoded = urlDecode(jval)
+  } {
+    if (decoded == "Empty") cache += urlDecode(key) -> Empty
+    else {
+      for {
+        json <- tryo(parse(decoded))
+        value <- tryo(json.extract[GeoLocation])
+      } {
+        cache += (urlDecode(key) -> Full(value))
+      }
+    }
+  }
+  
+
 
   def apply(in: String): Box[GeoLocation] = {
-    Empty
-    /*
-    synchronized{cache.get(in)} openOr {
-      val encoder = new Geocoder
-      val ret = encoder.getGeoLocation(in)
-      synchronized(cache(in) = ret)
-      ret
+    val all = 
+    synchronized{
+      val key = md5(in)
+      cache.get(key) openOr {
+        val encoder = new Geocoder
+        val ret = encoder.getGeoLocation(in)
+        cache += key -> ret
+
+        import net.liftweb.json.Serialization.{read, write}
+        implicit def formats = Serialization.formats(NoTypeHints)
+
+        val fr = new PrintWriter(new FileOutputStream(new File("geocache.txt"), true))
+        fr.println(urlEncode(key)+"="+(ret match {
+          case Full(geo) => urlEncode(write(geo))
+
+          case _ => "Empty"
+        }))
+        fr.close()
+
+        ret
+      }
     }
-    */
+
+    if (in.toLowerCase == "ca") println("Hey... loc for CA is "+all)
+
+    all
   }
 }
-class Geocoder extends TestKit {
+
+class Geocoder extends RequestKit {
   def baseUrl = "http://maps.google.com"
 
   protected def getString(url: String, params: (String, Any)*): Box[String] =
-    get(url, params :_*) match {
-      case hr: HttpResponse if hr.code == 200 => tryo(new String(hr.body, "UTF-8"))
-      case r => None
-    }
+    for {
+      resp <- get(url, params :_*).filter(_.code == 200) ?~ "Didn't get a 200"
+      answer <- tryo(new String(resp.body, "UTF-8"))
+    } yield answer
 
   private def getGeoLocation(in: String): Box[GeoLocation] = {
     val encodedString = urlEncode(in.trim)

@@ -1,4 +1,5 @@
-package org.snapimpact.dispatch
+package org.snapimpact
+package dispatch
 
 /**
 * Created by IntelliJ IDEA.
@@ -24,10 +25,12 @@ import org.joda.time._
 import org.joda.time.format._
 
 
+import org.snapimpact.util.SkipHandler
+
 // Tests against the local server
 class APITest extends Runner(new APISpec) with JUnit with Console
 
-class APISpec extends Specification with ApiSubmitTester with TestKit
+class APISpec extends Specification with ApiSubmitTester with RequestKit
 {
   def baseUrl = "http://localhost:8989"
   RunWebApp.start()
@@ -35,48 +38,45 @@ class APISpec extends Specification with ApiSubmitTester with TestKit
   "api" should {
 
     "Give a 401 without a key" in {
-      get("/api/volopps", "q" -> "hunger") match {
-        case r: HttpResponse =>
-          r.code must_== 401
-        case x =>
-          true must_== false
-      }
+      get("/api/volopps", "q" -> "hunger").map(_.code) must_== Full(401)
     }
 
     "Give a 200 with a key" in {
-      get("/api/volopps", "key" -> "test", "q" -> "hunger") match {
-        case r: HttpResponse =>
-          r.code must_== 200
-        case x =>
-          true must_== false
-      }
+      get("/api/volopps", "key" -> "test", "q" -> "hunger").
+      map(_.code)  must_== Full(200)
     }
 
 
 
-    // SkipHandler skips tests as long as they do not pass
+
     // once these pass that means somebody is making progress on the API development
     // and the pendingUntilFixed wrapper can be excluded
     "provide common functionalities" in
     {
-         sharedFunctionality
+      sharedFunctionality
     }
 
     // Searches
     "search for something not there" in {
-                searchFor_zx_NotThere_xz
+      searchFor_zx_NotThere_xz
     }
     "search for hunger" in {
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
                 org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForHunger}
+=======
+      searchForHunger
+>>>>>>> 587b0f6089b5ec82f9c409395cfb1c555dfabe09:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
     }
     "search for specific dates" in {
-      org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForSpecificDates}
+      SkipHandler {
+        searchForSpecificDates
+      }
     }
     "search for zip code" in {
-      org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForZip}
+      searchForZip
     }
     "search for date then zip code" in {
-      org.snapimpact.util.SkipHandler.pendingUntilFixed{searchForDateThenZip}
+      searchForDateThenZip
     }
 
   } // "api" should
@@ -91,7 +91,7 @@ class APISpec extends Specification with ApiSubmitTester with TestKit
 
 class V1SysTest extends Runner(new V1SysSpec) with JUnit with Console
 
-class V1SysSpec extends Specification with TestKit with ApiSubmitTester
+class V1SysSpec extends Specification with RequestKit with ApiSubmitTester
 {
   def baseUrl = "http://www.allforgood.org"
 
@@ -106,8 +106,13 @@ class V1SysSpec extends Specification with TestKit with ApiSubmitTester
 
   "The API from the old V1 system" should
   {
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
 "search for hunger" in {searchForHunger}
 
+=======
+    "search for hunger" in {searchForHunger}
+    
+>>>>>>> 587b0f6089b5ec82f9c409395cfb1c555dfabe09:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
     "search for specific dates" in {searchForSpecificDates}
 
     "search for zip code" in {searchForZip}
@@ -123,8 +128,9 @@ class V1SysSpec extends Specification with TestKit with ApiSubmitTester
 // Does the actual interaction with the webserver and includes the common tests
 trait ApiSubmitTester // extends // with TestKit
 {
-  self: Specification with TestKit =>
+  self: Specification with RequestKit =>
 
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
     // Returns RetV1 object from volopps API search
     def submitApiRequest( pars: (String, Any)*): RetV1 =
     {
@@ -141,16 +147,26 @@ trait ApiSubmitTester // extends // with TestKit
         case ex => throw new FailureException("Something went wrong while interacting with the webserver," + ex.toString() )
       }
     }
+=======
+    implicit def formats = DefaultFormats
+>>>>>>> 587b0f6089b5ec82f9c409395cfb1c555dfabe09:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
 
 
-    // Test for root and props set
-    def sharedFunctionality = {
+// Returns RetV1 object from volopps API search
+def submitApiRequest( pars: (String, Any)*): Box[RetV1] =
+  {
+    for {
+      answer <- get( "/api/volopps", pars :_* ).filter(_.code == 200)
+      val jString = new String(answer.body)
+      json <- tryo(parse(jString))
+      ret <- tryo(json.extract[RetV1])
+    } yield ret
+  }
 
-        val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "a" )
 
-        // Root of correct type
-        ret must haveClass[RetV1]
+def dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd")
 
+<<<<<<< HEAD:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
         // All good prop
         val descr = "All for Good search results"
         ret.description mustEqual descr
@@ -166,82 +182,141 @@ trait ApiSubmitTester // extends // with TestKit
         // Make sure it's a DateTime
         item must haveClass[DateTime]
    }
+=======
+def now = new DateTime
 
-   // Search for something not available in the database
-   def searchFor_zx_NotThere_xz = {
-          val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" )
+def later(days: Int):String = dateFormatter.print(now.plusDays(days))
+>>>>>>> 587b0f6089b5ec82f9c409395cfb1c555dfabe09:src/test/scala/org/snapimpact/dispatch/ApiTest.scala
 
-          // no events will be returned on this criteria zx_NotThere_xz
-          val count = 0;
+def showRes(name: String)(res: Box[RetV1]) {
+  res match {
+    case Full(v1) => {
+      println(name+": "+v1)
+    }
 
-          ( ret.items.length == count ) must_== true
-
+    case x => println(name+": "+x)
   }
+}
 
-    // *** Note *** This test assumes that there are always hunger events available in the database
-    def searchForHunger= {
-      val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "hunger" )
+def testParams(f: Box[Box[RetV1] => Unit], p: (String, Any)*)(countTest: Int => Unit) {
+  val res = submitApiRequest("output" -> "json" :: 
+                             "key" -> "UnitTest" :: p.toList :_*)
+  f.foreach(_.apply(res))
 
-      val count = 0;
-      ( ret.items.length > count ) must_== true
+  res match {
+    case Full(ret) => {
+      countTest(ret.items.length)
+      for( item <- ret.items ) item must notBe( null )
+    }
 
-      // Make sure they are not null
-      for( item <- ret.items ){
-        item must notBe( null )
-      }
-   }
+    case x => fail(x.toString)
+  }      
+}
 
-  // Search by date - always assumes there are events bewteen now + 7 days and now + 14 days
-  def searchForSpecificDates = {
-    val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
-    val now = new DateTime
-    val plus7 = now.plusDays(7)
-    val plus14 = now.plusDays(14)
+def testParams(p: (String, Any)*)(countTest: Int => Unit) {
+  testParams(Empty, p :_*)(countTest)
+}
 
-    val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
-      "vol_startdate" -> fmt.print(plus7), "vol_enddate" -> fmt.print(plus14))
 
-    val count = 0;
-      ( ret.items.length > count ) must_== true
+// Test for root and props set
+def sharedFunctionality = {
 
-    // Make sure they are not null
-      for( item <- ret.items ){
-        item must notBe( null )
-      }
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "a" ).open_!
+
+  // Root of correct type
+  ret must haveClass[RetV1]
+
+  // All good prop
+  val descr = "All for Good search results"
+  ret.description mustEqual descr
+  
+  // version prop
+  val ver = 1.0
+  ret.version mustEqual ver
+
+  // See if the date is good and can be parsed
+  // sample string -> Sat, 01 May 2010 16:51:10 +0000
+  val dateFormatter = DateTimeFormat.forPattern("E, dd MMM yyyy HH:mm:ss Z");
+  val item =  dateFormatter.parseDateTime( ret.lastBuildDate )
+  // Make sure it's a DateTime
+  item must haveClass[DateTime]
+}
+
+// Search for something not available in the database
+def searchFor_zx_NotThere_xz = {
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "zx_NotThere_xz" ).open_!
+  
+  val count = 0
+  
+  ret.items.length must_== count
+}
+
+// *** Note *** This test assumes that there are always hunger events available in the database
+def searchForHunger= {
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "q" -> "hunger" ).open_!
+
+  val count = 0
+  ret.items.length must be > count
+
+  // Make sure they are not null
+  for( item <- ret.items ){
+    item must notBe( null )
   }
+}
 
-  // Search by zip code - always assumes there are events in 94117 (San Francisco)
-  def searchForZip = {
-    val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "vol_loc" -> "94117" )
+// Search by date - always assumes there are events bewteen now + 7 days and now + 14 days
+def searchForSpecificDates = {
+  val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
+  val now = new DateTime
+  val plus7 = now.plusDays(7)
+  val plus14 = now.plusDays(14)
 
-    val count = 0;
-      ( ret.items.length > count ) must_== true
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
+                             "vol_startdate" -> fmt.print(plus7), "vol_enddate" -> fmt.print(plus14)).open_!
 
-      // Make sure they are not null
-      for( item <- ret.items ){
-        item must notBe( null )
-      }
+  val count = 0
+  ret.items.length must be > count
+  
+  // Make sure they are not null
+  for( item <- ret.items ){
+    item must notBe( null )
   }
+}
 
-  // Search by date then zip code - always assumes there are events bewteen now + 7 days and now + 14 days
-  // near the zip 94117 (San Francisco)
-  def searchForDateThenZip = {
-    val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
-    val now = new DateTime
-    val plus7 = now.plusDays(7)
-    val plus14 = now.plusDays(14)
+// Search by zip code - always assumes there are events in 94117 (San Francisco)
+def searchForZip = {
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest", "vol_loc" -> "94117" ).open_!
 
-    val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
-      "vol_startdate" -> fmt.print(plus7), "vol_enddate" -> fmt.print(plus14), "vol_loc" -> "94117")
-
-    val count = 0;
-      ( ret.items.length > count ) must_== true
-
-    // Make sure they are not null
-      for( item <- ret.items ){
-        item must notBe( null )
-      }
+  val count = 0
+  ret.items.length must be > count
+  
+  // Make sure they are not null
+  for( item <- ret.items ){
+    item must notBe( null )
   }
+}
+
+// Search by date then zip code - always assumes there are events bewteen now + 7 days and now + 14 days
+// near the zip 94117 (San Francisco)
+def searchForDateThenZip = {
+  val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
+  val now = new DateTime
+  val plus7 = now.plusDays(7)
+  val plus14 = now.plusDays(14)
+
+  val ret = submitApiRequest( "output" -> "json", "key" -> "UnitTest",
+                             "vol_startdate" -> fmt.print(plus7), 
+                             "vol_enddate" -> fmt.print(plus14),
+                             "vol_loc" -> "94117").open_!
+  
+  val count = 0
+  ret.items.length must be > count
+  
+  // Make sure they are not null
+  for( item <- ret.items ){
+    item must notBe( null )
+  }
+}
 
 } // trait ApiSubmitTester
 
@@ -286,13 +361,20 @@ object RunWebApp {
 
   server.addHandler(context)
 
+  private var uploaded = false
+
   def start() ={
-    import java.io.{File => JFile}
-    server.start()
-    for {
-      dir <- tryo{new JFile("./docs/test_data")}
-      files <- Box !! dir.listFiles
-    } Uploader.upload(files.toList)
+    synchronized {
+      if (!uploaded) {
+        import java.io.{File => JFile}
+        server.start()
+        for {
+          dir <- tryo{new JFile("./docs/test_data")}
+          files <- Box !! dir.listFiles
+        } Uploader.upload(files.toList)
+        uploaded = true
+      }
+    }
   }
 
   def stop() = {
@@ -301,7 +383,7 @@ object RunWebApp {
   }
 }
 
-object Uploader extends TestKit {
+object Uploader extends RequestKit {
   import java.io.{File => JFile, ByteArrayInputStream}
   import scala.xml.XML
 
